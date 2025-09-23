@@ -45,7 +45,12 @@ const DEFAULT_TESTS = [
 const TEST_ART = {
   pushups: "/drills/push-up.png",
   plank: "/drills/plank-hold.png",
+  squats: "/drills/squat-front.png",          // NEW
+  jumpingjacks: "/drills/jumping-jack.png",   // NEW
 };
+// --- Age bounds (tweak later) ---
+const AGE_MIN = 8;
+const AGE_MAX = 40;
 
 
 function sanitizeTestsCatalog(input) {
@@ -638,6 +643,10 @@ function CandidateDetailsScreen({ athleteName, onBack, onSave }) {
   const [gender, setGender] = useState("");
   const [age, setAge] = useState("");
   const [photoUrl, setPhotoUrl] = useState(null);
+    const ageNum = Number(age);
+  const ageInvalid =
+    age === "" || Number.isNaN(ageNum) || ageNum < AGE_MIN || ageNum > AGE_MAX;
+
 
   return (
     <div className="min-h-dvh bg-white">
@@ -659,12 +668,27 @@ function CandidateDetailsScreen({ athleteName, onBack, onSave }) {
               <option>Other</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Age</label>
-            <input type="number" inputMode="numeric" placeholder="e.g., 18"
-              value={age} onChange={(e)=>setAge(e.target.value)}
-              className="w-full rounded-2xl border border-gray-300 px-4 py-3" />
-          </div>
+         <div>
+  <label className="block text-sm text-gray-600 mb-1">Age</label>
+  <input
+    type="number"
+    inputMode="numeric"
+    placeholder="e.g., 18"
+    min={AGE_MIN}
+    max={AGE_MAX}
+    value={age}
+    onChange={(e) => setAge(e.target.value)}
+    className={`w-full rounded-2xl border px-4 py-3 ${
+      ageInvalid ? "border-red-500" : "border-gray-300"
+    }`}
+  />
+  {ageInvalid && (
+    <div className="mt-1 text-xs text-red-600">
+      Age must be between {AGE_MIN} and {AGE_MAX}.
+    </div>
+  )}
+</div>
+
           <div>
             <label className="block text-sm text-gray-600 mb-1">Profile Photo (optional)</label>
             <label className="block">
@@ -685,12 +709,25 @@ function CandidateDetailsScreen({ athleteName, onBack, onSave }) {
             )}
           </div>
         </div>
-        <button onClick={()=> {
-          const p = { name: athleteName, gender, age: age? Number(age): null, photoUrl: photoUrl || null };
-          onSave(p);
-        }} className="w-full py-3 rounded-2xl bg-emerald-600 text-white active:scale-95">
-          Save & Continue
-        </button>
+        <button
+  onClick={() => {
+    if (ageInvalid) return; // invalid hua to aage mat jao
+    const p = {
+      name: athleteName,
+      gender,
+      age: age ? Number(age) : null,
+      photoUrl: photoUrl || null,
+    };
+    onSave(p);
+  }}
+  disabled={ageInvalid}
+  className={`w-full py-3 rounded-2xl text-white active:scale-95 ${
+    ageInvalid ? "bg-gray-300 cursor-not-allowed" : "bg-emerald-600"
+  }`}
+>
+  Save & Continue
+</button>
+
       </main>
     </div>
   );
@@ -803,6 +840,16 @@ if (finalMetric && finalMetric.testId === view.testId) {
     setHistory((arr) => arr.map((r) => (r.id === updated.id ? updated : r)));
     setView({ name: "result", athlete: view.athlete, summary: updated });
   }
+  function attachSaiToLatestFromAnyView(athlete) {
+  // Find latest result for this athlete
+  const latest = [...history].reverse().find((r) => r.athlete === athlete);
+  if (!latest) return;
+  const updated = { ...latest, sai: { l1Percentile: 85, eligibleL2: true } };
+  setHistory((arr) => arr.map((r) => (r.id === updated.id ? updated : r)));
+  // Match the original behavior: take the user to the Result page
+  setView({ name: "saiGate", athlete, summary: updated });
+}
+
 
   // ------------------- Renders -------------------
 
@@ -898,6 +945,11 @@ if (finalMetric && finalMetric.testId === view.testId) {
   }
 
   if (view.name === "home") {
+    const allDone = l1AllDone(l1Progress, view.athlete);
+const athleteHistory = history.filter((h) => h.athlete === view.athlete);
+const latest = athleteHistory.at(-1) || null;
+const hasSai = !!latest?.sai;
+
     return (
       <div className="min-h-dvh bg-white">
         <AppHeader title="Level 1 – Pick a Test"
@@ -917,6 +969,39 @@ if (finalMetric && finalMetric.testId === view.testId) {
           <div className="text-xs text-gray-600">
             Progress: {Object.keys(l1Progress[view.athlete] || {}).length} / {L1_TEST_IDS.length} completed
           </div>
+{/* SAI block after drills (only when all L1 drills are completed) */}
+{allDone && (
+  !hasSai ? (
+    <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4">
+      <div className="font-semibold">Wait for SAI scorecard</div>
+      <div className="text-sm text-amber-700">
+        All L1 drills completed. Tap refresh to fetch the demo percentile.
+      </div>
+      <button
+        onClick={() => attachSaiToLatestFromAnyView(view.athlete)}
+        className="mt-3 w-full py-3 rounded-2xl bg-amber-600 text-white active:scale-95"
+      >
+        Refresh SAI Scorecard
+      </button>
+    </div>
+  ) : (
+    <div className="mt-4 rounded-2xl border border-gray-200 p-4 bg-emerald-50">
+      <div className="font-semibold mb-1">SAI Evaluation (Demo)</div>
+      <div className="text-sm">
+        Percentile: <span className="font-semibold">{latest.sai.l1Percentile}th</span>
+      </div>
+      <div className="text-sm mt-2 text-emerald-800">Eligible for Level 2</div>
+      <button
+        onClick={() => setView({ name: "saiGate", athlete: view.athlete, summary: latest })}
+        className="mt-3 w-full py-3 rounded-2xl bg-emerald-600 text-white active:scale-95"
+      >
+        Continue to Level 2 Drills
+      </button>
+    </div>
+  )
+)}
+
+
 
           <div className="grid grid-cols-1 gap-3">
             {Array.isArray(TESTS_CATALOG_SAFE) && TESTS_CATALOG_SAFE
@@ -1024,12 +1109,12 @@ if (view.name === "test") {
       </div>
       {/* ---------- /Instructions Card ---------- */}
 
-      {/* ---------- Instruction art (only for Push-ups & Plank) ---------- */}
-      {(view.testId === "pushups" || view.testId === "plank") && (
+            {/* ---------- Instruction art (generic via TEST_ART) ---------- */}
+      {TEST_ART[view.testId] && (
         <div className="rounded-2xl border border-gray-200 bg-white p-2">
           <div className="w-full aspect-video max-h-64 overflow-hidden flex items-center justify-center">
             <img
-              src={view.testId === "plank" ? "/drills/plank-hold.png" : "/drills/push-up.png"}
+              src={TEST_ART[view.testId]}
               alt={`${test.title} guide`}
               loading="lazy"
               className="w-full h-full object-contain"
@@ -1038,6 +1123,7 @@ if (view.name === "test") {
         </div>
       )}
       {/* ---------- /Instruction art ---------- */}
+
 
       {/* Start button */}
       <button
