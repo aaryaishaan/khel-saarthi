@@ -1,6 +1,6 @@
 # KHEL SAARTHI — Democratizing Sports Talent Assessment
 
-> 📱 + 🧠 + ⚖️  **A lightweight, mobile-first prototype to standardize athlete testing across India**  
+>   **A lightweight, mobile-first prototype to standardize athlete testing across India**  
 > On-device AI + fair, multi-stage scoring → equal opportunity for both **rural** and **metro** athletes.
 
 ---
@@ -8,9 +8,9 @@
 ## 🚩 Problem
 
 India has talent everywhere—but access to **standardized, trustworthy** assessments is uneven.  
-- 🧭 Long travel & patchy internet  
-- 🧑‍⚖️ Inconsistent judging , corruption and biasness
-- 🎞️ Heavy, video-first systems that punish low-end phones  
+- Long travel & patchy internet  
+-  Inconsistent judging , corruption and biasness
+-  Heavy, video-first systems that punish low-end phones  
 
 **Result:** talent gets missed.
 
@@ -35,7 +35,7 @@ India has talent everywhere—but access to **standardized, trustworthy** assess
 
 ---
 
-## 🧩 Key Features (prototype)
+##  Key Features (prototype)
 
 - ⚛️ Mobile-first React UI (Vite + Tailwind)  
 - 🧍‍♂️ **MediaPipe Pose Landmarker** for basic fitness tests (on-device)  
